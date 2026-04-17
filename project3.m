@@ -6,13 +6,15 @@
 %raw = [double(d1.data); double(d2.data)];
 %Fs = d1.Fs; %sampling rate from mat file
 
-fid = fopen("DA230805210000_000.mat", 'rb');
-raw1 = fread(fid, inf, 'int16');
-fclose(fid);
+%fid = fopen("DA230805210000_000.mat", 'rb');
+%fseek(fid, -60000000, 'eof');
+raw1 = matGetVariable('DA230805210000_000.mat', 'data');
+disp('please')
+%fclose(fid);
 
-fid = fopen("DA230805220000_000.mat", 'rb');
-raw2 = fread(fid, inf, 'int16');
-fclose(fid);
+%fid = fopen("DA230805220000_000.mat", 'rb');
+raw2 = matGetVariable('DA230805220000_000.mat', 'data');
+%fclose(fid);
 disp('close')
 
 Fs = 100000;
@@ -27,6 +29,11 @@ t = (0:length(raw)-1)' / Fs;
 mixed = raw .* exp(-1j * 2*pi*f0*t);
 
 
-%checking for spike near 0
-pwelch(real(mixed(1:10000)), [], [], 2^16, Fs);
-
+N = 100000;
+Y = fft(real(mixed(1:N)), N);
+f = (0:N-1) * Fs / N;
+plot(f/1000, abs(Y))
+xlim([0 2])
+xlabel('kHz')
+ylabel('Magnitude')
+title('mixed down')
