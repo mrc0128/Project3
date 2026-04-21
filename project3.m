@@ -1,39 +1,27 @@
-%%Ionospheric Radio
-%d1 = load('DA230805210000_000.mat');
-%d2 = load('DA230805220000_000.mat');
+%%Ionospheric Radio - Project 3
+Fs = 100000; f0 = 24000; % sampling rate and NAA transmitter frequency (Hz)
 
-%concatenating 
-%raw = [double(d1.data); double(d2.data)];
-%Fs = d1.Fs; %sampling rate from mat file
+% load entire 21:30-22:00 UTC file
+raw = double(matGetVariable('DA230805213000_000.mat', 'data'));
 
-%fid = fopen("DA230805210000_000.mat", 'rb');
-%fseek(fid, -60000000, 'eof');
-raw1 = matGetVariable('DA230805210000_000.mat', 'data');
-disp('please')
-%fclose(fid);
-
-%fid = fopen("DA230805220000_000.mat", 'rb');
-raw2 = matGetVariable('DA230805220000_000.mat', 'data');
-%fclose(fid);
-disp('close')
-
-Fs = 100000;
-raw = double([raw1; raw2]);
-disp('oh no my pc')
-
-
-%mixing down
-
-f0 = 24000;
+% build time vector in seconds
 t = (0:length(raw)-1)' / Fs;
-mixed = raw .* exp(-1j * 2*pi*f0*t);
 
+% heterodyne mix down and lowpass filter at 200 Hz
+[b, a] = butter(5, 200/(Fs/2), 'low');
+filt = filter(b, a, real(raw .* exp(-1j*2*pi*f0*t)));
 
-N = 100000;
-Y = fft(real(mixed(1:N)), N);
-f = (0:N-1) * Fs / N;
-plot(f/1000, abs(Y))
-xlim([0 2])
-xlabel('kHz')
-ylabel('Magnitude')
-title('mixed down')
+% average into 1 second bins
+for i = 1:floor(length(filt)/Fs)
+    amplitude_avg(i) = mean(abs(filt((i-1)*Fs+1:i*Fs)));
+end
+
+% UTC time axis - file starts at 21:30 UTC
+t_utc = 21.5 + (0:length(amplitude_avg)-1)/3600;
+
+plot(t_utc, 20*log10(amplitude_avg))
+xlabel('UTC Hour'), ylabel('Amplitude (dB)')
+title('NAA 24 kHz Amplitude - Aug 5 2023')
+xline(21.75, 'r--', 'X1.6 Flare start 21:45 UTC (NOAA)')
+xline(21.92, 'b--', 'VLF response onset ~21:55 UTC')
+grid on
